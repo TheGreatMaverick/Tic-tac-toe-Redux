@@ -1,51 +1,44 @@
-import { useState } from 'react'
-import './App.css'
-import { defaultFields } from './constants';
-import { Field, Player } from './types';
-import { checkDraw, checkWin } from './actions';
-import { Info, Fields } from './components';
-
+import { useEffect, useState } from "react";
+import "./App.css";
+import { Info, Fields } from "./components";
+import { store } from "./store";
 
 function App() {
-  const [fields, setFields] = useState<Field[]>(defaultFields);
-  const [currentPlayer, setCurrentPlayer] = useState<Player>("X");
-  const [winCombo, setWinCombo] = useState<number[] | null>(null);
-  // const [isGameEnded,setIsGameEnded] = useState(false);
-  const [draw,setDraw] = useState<boolean>(false);
+  const [gameState, setGameState] = useState(store.getState());
 
- 
-  
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => {
+      setGameState(store.getState());
+    });
+    return unsubscribe;
+  }, []);
+
   const handleClick = (index: number) => {
-    if(fields[index] || winCombo || draw) return;
-    const newFields = [...fields];
-    newFields[index] = currentPlayer;
-    setFields(prevState => prevState.map((field, i) => i === index ? currentPlayer : field));
-    const existWinCombo = checkWin(newFields, currentPlayer);
-    if(existWinCombo) {
-      return setWinCombo(existWinCombo);
-    } else if (checkDraw(newFields)) {
-      return setDraw(true);
-    } 
-    
-    
-    setCurrentPlayer((prev) => (prev === "O" ? "X" : "O"));
-  }
+    store.dispatch({ type: "MAKE_MOVE", index });
+  };
 
   const handleReset = () => {
-    setCurrentPlayer("X");
-    setFields(defaultFields);
-    setDraw(false);
-    setWinCombo(null);
-  }
+    store.dispatch({ type: "RESET_GAME" });
+  };
 
   return (
-   <div className="app"> 
+    <div className="app">
       <h1>Крестики-Нолики</h1>
-      <Info currentPlayer={currentPlayer} draw={draw} win={!!winCombo} />
-      <Fields fields={fields} onClick={handleClick} winCombo={winCombo} />
-      <button onClick={handleReset} className='reset'>Новая Игра</button>
-   </div>
-  )
+      <Info
+        currentPlayer={gameState.currentPlayer}
+        draw={gameState.draw}
+        win={!!gameState.winCombo}
+      />
+      <Fields
+        fields={gameState.fields}
+        onClick={handleClick}
+        winCombo={gameState.winCombo}
+      />
+      <button onClick={handleReset} className="reset">
+        Новая Игра
+      </button>
+    </div>
+  );
 }
 
-export default App
+export default App;
